@@ -15,7 +15,15 @@ const { authenticateToken, SECRET_KEY } = require('./middleware/auth');
 const app = express();
 const PORT = process.env.PORT || 2018;
 
-app.use(cors());
+// CORS Configuration
+const corsOptions = {
+    origin: ['http://localhost:5173', 'https://laca.danhtrong.online'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+};
+
+app.use(cors(corsOptions));
 app.use(bodyParser.json());
 
 // Serve static files from uploads directory
