@@ -3,6 +3,8 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const path = require('path');
 const sequelize = require('./database');
 const Customer = require('./models/Customer');
 const Order = require('./models/Order');
@@ -15,6 +17,34 @@ const PORT = process.env.PORT || 2018;
 
 app.use(cors());
 app.use(bodyParser.json());
+
+// Serve static files from uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Configure multer for QR image uploads
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, path.join(__dirname, 'uploads/qr'));
+    },
+    filename: (req, file, cb) => {
+        const percentage = req.params.percentage;
+        const ext = path.extname(file.originalname);
+        cb(null, `qr-${percentage}${ext}`);
+    }
+});
+
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+        if (allowedTypes.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only .png, .jpg and .jpeg format allowed!'));
+        }
+    }
+});
 
 // Initialize Default Settings & Admin User
 const initData = async () => {
@@ -79,6 +109,245 @@ app.put('/api/settings', async (req, res) => {
             await Setting.upsert({ key, value: String(value) });
         }
         res.json({ message: 'Settings updated' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Upload QR code image
+app.post('/api/settings/qr/:percentage', authenticateToken, upload.single('qrImage'), async (req, res) => {
+    try {
+        const percentage = req.params.percentage;
+        const validPercentages = ['5', '10', '15', '20'];
+
+        if (!validPercentages.includes(percentage)) {
+            return res.status(400).json({ error: 'Invalid percentage. Must be 5, 10, 15, or 20' });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+
+        // Save the filename to settings
+        const key = `qr_image_${percentage}`;
+        await Setting.upsert({ key, value: req.file.filename });
+
+        res.json({
+            message: 'QR image uploaded successfully',
+            filename: req.file.filename,
+            url: `/uploads/qr/${req.file.filename}`
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get QR image info
+app.get('/api/settings/qr/:percentage', async (req, res) => {
+    try {
+        const percentage = req.params.percentage;
+        const key = `qr_image_${percentage}`;
+        const setting = await Setting.findByPk(key);
+
+        if (!setting) {
+            return res.json({ exists: false });
+        }
+
+        res.json({
+            exists: true,
+            filename: setting.value,
+            url: `/uploads/qr/${setting.value}`
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Public QR display page
+app.get('/qr/:percentage', async (req, res) => {
+    try {
+        const percentage = req.params.percentage;
+        const key = `qr_image_${percentage}`;
+        const setting = await Setting.findByPk(key);
+
+        if (!setting) {
+            return res.status(404).send(`
+                <!DOCTYPE html>
+                <html lang="vi">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>QR Code - ${percentage}%</title>
+                    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+                    <style>
+                        * {
+                            margin: 0;
+                            padding: 0;
+                            box-sizing: border-box;
+                        }
+                        body {
+                            min-height: 100vh;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            background: #f5f5f5;
+                            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                            padding: 20px;
+                        }
+                        .container {
+                            background: white;
+                            border-radius: 16px;
+                            padding: 48px 40px;
+                            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+                            max-width: 480px;
+                            width: 100%;
+                            text-align: center;
+                        }
+                        .icon {
+                            font-size: 4rem;
+                            margin-bottom: 16px;
+                        }
+                        .title {
+                            color: #014E27;
+                            font-size: 1.75rem;
+                            font-weight: 700;
+                            margin-bottom: 12px;
+                        }
+                        .message {
+                            color: #6b7280;
+                            font-size: 1rem;
+                            line-height: 1.6;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="icon">⚠️</div>
+                        <div class="title">QR Code Không Tồn Tại</div>
+                        <div class="message">
+                            Chưa có mã QR nào được tải lên cho giảm giá ${percentage}%.
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `);
+        }
+
+        const imageUrl = `/uploads/qr/${setting.value}`;
+
+        res.send(`
+            <!DOCTYPE html>
+            <html lang="vi">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Laca POS - Giảm giá ${percentage}%</title>
+                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+                <style>
+                    * {
+                        margin: 0;
+                        padding: 0;
+                        box-sizing: border-box;
+                    }
+                    body {
+                        min-height: 100vh;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        background: #f5f5f5;
+                        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                        padding: 20px;
+                    }
+                    .container {
+                        background: white;
+                        border-radius: 16px;
+                        padding: 48px 40px;
+                        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+                        max-width: 480px;
+                        width: 100%;
+                        text-align: center;
+                    }
+                    .logo {
+                        color: #014E27;
+                        font-size: 1.75rem;
+                        font-weight: 700;
+                        letter-spacing: -0.5px;
+                        margin-bottom: 8px;
+                    }
+                    .discount-badge {
+                        display: inline-block;
+                        background: #014E27;
+                        color: white;
+                        padding: 10px 24px;
+                        border-radius: 8px;
+                        font-size: 1.5rem;
+                        font-weight: 700;
+                        margin: 16px 0 32px;
+                        letter-spacing: 0.5px;
+                    }
+                    .qr-wrapper {
+                        background: #ffffff;
+                        padding: 24px;
+                        border: 2px solid #014E27;
+                        border-radius: 12px;
+                        margin-bottom: 24px;
+                        display: inline-block;
+                    }
+                    .qr-image {
+                        display: block;
+                        max-width: 280px;
+                        width: 100%;
+                        height: auto;
+                    }
+                    .description {
+                        color: #374151;
+                        font-size: 1rem;
+                        line-height: 1.6;
+                        margin-bottom: 24px;
+                    }
+                    .footer {
+                        padding-top: 24px;
+                        border-top: 1px solid #e5e7eb;
+                        color: #9ca3af;
+                        font-size: 0.875rem;
+                    }
+                    @media (max-width: 480px) {
+                        .container {
+                            padding: 32px 24px;
+                        }
+                        .logo {
+                            font-size: 1.5rem;
+                        }
+                        .discount-badge {
+                            font-size: 1.25rem;
+                            padding: 8px 20px;
+                        }
+                        .qr-wrapper {
+                            padding: 16px;
+                        }
+                        .qr-image {
+                            max-width: 240px;
+                        }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="logo">LACA POS</div>
+                    <div class="discount-badge">GIẢM ${percentage}%</div>
+                    <div class="qr-wrapper">
+                        <img src="${imageUrl}" alt="QR Code ${percentage}%" class="qr-image" />
+                    </div>
+                    <div class="description">
+                        Quét mã QR để nhận ưu đãi giảm giá ${percentage}%
+                    </div>
+                    <div class="footer">
+                        Cảm ơn bạn đã sử dụng dịch vụ Laca POS
+                    </div>
+                </div>
+            </body>
+            </html>
+        `);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

@@ -122,6 +122,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import { API_URL } from '../config/api'
 
 // Data
 const customerOptions = ref([])
@@ -187,7 +188,7 @@ const formatCurrency = (value) => {
 
 const fetchSettings = async () => {
   try {
-    const res = await axios.get('http://localhost:3000/api/settings')
+    const res = await axios.get(`${API_URL}/api/settings`)
     if (res.data.moneyToPointRate) settings.value.moneyToPointRate = Number(res.data.moneyToPointRate)
     if (res.data.pointToMoneyRate) settings.value.pointToMoneyRate = Number(res.data.pointToMoneyRate)
   } catch (error) {
@@ -199,7 +200,7 @@ const searchCustomer = async (query) => {
   if (query) {
     loadingSearch.value = true
     try {
-      const res = await axios.get('http://localhost:3000/api/customers')
+      const res = await axios.get(`${API_URL}/api/customers`)
       // Simple client-side filtering for demo (should be server-side for large data)
       customerOptions.value = res.data.filter(c => 
         c.phoneNumber.includes(query) || (c.name && c.name.toLowerCase().includes(query.toLowerCase()))
@@ -214,7 +215,7 @@ const searchCustomer = async (query) => {
 
 const onCustomerSelect = async (val) => {
   try {
-    const res = await axios.get(`http://localhost:3000/api/customers/${val}`)
+    const res = await axios.get(`${API_URL}/api/customers/${val}`)
     currentCustomer.value = res.data
     usePoints.value = false // Reset switch
   } catch (error) {
@@ -238,7 +239,7 @@ const processOrder = async () => {
       finalAmount: finalAmount.value
     }
 
-    await axios.post('http://localhost:3000/api/orders', payload)
+    await axios.post(`${API_URL}/api/orders`, payload)
     
     ElMessage.success(`Thanh toán thành công! Tích được ${pointsEarned.value} điểm.`)
     

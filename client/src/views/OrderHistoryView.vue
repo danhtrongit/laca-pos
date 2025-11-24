@@ -79,6 +79,7 @@
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
+import { API_URL } from '../config/api'
 
 const orders = ref([])
 const total = ref(0)
@@ -91,7 +92,7 @@ const fetchOrders = async () => {
   loading.value = true
   try {
     const token = localStorage.getItem('token')
-    const res = await axios.get('http://localhost:3000/api/orders', {
+    const res = await axios.get(`${API_URL}/api/orders`, {
       params: {
         page: page.value,
         limit: limit.value,

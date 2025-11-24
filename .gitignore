@@ -2,7 +2,13 @@ node_modules/
 logs/
 .DS_Store
 .env
+.env.local
 .vscode/
 client/node_modules/
 client/dist/
 server/node_modules/
+server/database.sqlite
+server/database.sqlite.backup
+server/uploads/qr/*.png
+server/uploads/qr/*.jpg
+server/uploads/qr/*.jpeg

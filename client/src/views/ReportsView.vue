@@ -53,6 +53,7 @@ import {
   LinearScale
 } from 'chart.js'
 import { Bar } from 'vue-chartjs'
+import { API_URL } from '../config/api'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
@@ -75,7 +76,7 @@ const formatCurrency = (value) => {
 const fetchData = async () => {
   try {
     const token = localStorage.getItem('token')
-    const res = await axios.get('http://localhost:3000/api/reports/dashboard', {
+    const res = await axios.get(`${API_URL}/api/reports/dashboard`, {
       params: { type: chartType.value },
       headers: { Authorization: `Bearer ${token}` }
     })
