@@ -6,7 +6,7 @@
           <span>Cấu hình quy đổi điểm</span>
         </div>
       </template>
-      <el-form :model="form" label-width="200px">
+      <el-form :model="form" :label-width="labelWidth" label-position="top" class="settings-form">
         <el-form-item label="Tỉ lệ Tiền -> Điểm">
           <el-input v-model="form.moneyToPointRate" type="number">
             <template #append>VND = 1 Điểm</template>
@@ -91,8 +91,8 @@
 </template>
 
 <script setup>
-import { reactive, ref, onMounted } from 'vue'
-import axios from 'axios'
+import { reactive, ref, computed, onMounted } from 'vue'
+import api from '../config/api'
 import { ElMessage } from 'element-plus'
 import { Upload, CopyDocument } from '@element-plus/icons-vue'
 import QRCode from 'qrcode'
@@ -107,9 +107,17 @@ const token = ref(localStorage.getItem('token'))
 const qrImages = reactive({})
 const qrCanvasRefs = reactive({})
 
+// Responsive label width
+const labelWidth = computed(() => {
+  if (typeof window !== 'undefined' && window.innerWidth < 768) {
+    return 'auto'
+  }
+  return '200px'
+})
+
 const fetchSettings = async () => {
   try {
-    const res = await axios.get(`${API_URL}/api/settings`)
+    const res = await api.get('/api/settings')
     if (res.data.moneyToPointRate) form.moneyToPointRate = res.data.moneyToPointRate
     if (res.data.pointToMoneyRate) form.pointToMoneyRate = res.data.pointToMoneyRate
   } catch (error) {
@@ -120,7 +128,7 @@ const fetchSettings = async () => {
 const fetchQRImages = async () => {
   for (const percentage of [5, 10, 15, 20]) {
     try {
-      const res = await axios.get(`${API_URL}/api/settings/qr/${percentage}`)
+      const res = await api.get(`/api/settings/qr/${percentage}`)
       if (res.data.exists) {
         qrImages[percentage] = res.data.url
       }
@@ -154,7 +162,7 @@ const generateQRCodes = async () => {
 const saveSettings = async () => {
   loading.value = true
   try {
-    await axios.put(`${API_URL}/api/settings`, form)
+    await api.put('/api/settings', form)
     ElMessage.success('Đã lưu cấu hình')
   } catch (error) {
     ElMessage.error('Lỗi khi lưu cấu hình')
@@ -208,6 +216,11 @@ onMounted(async () => {
   font-size: 12px;
   color: #999;
   line-height: 1.5;
+  margin-top: 4px;
+}
+
+.settings-form :deep(.el-form-item__label) {
+  font-weight: 500;
 }
 
 .qr-grid {
@@ -283,5 +296,43 @@ onMounted(async () => {
 
 .qr-code-display canvas {
   border-radius: 4px;
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 767px) {
+  .settings-form :deep(.el-form-item__label) {
+    text-align: left;
+    margin-bottom: 8px;
+  }
+  
+  .qr-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .qr-card {
+    padding: 16px;
+  }
+  
+  .qr-header h3 {
+    font-size: 1.2rem;
+  }
+  
+  .qr-placeholder {
+    padding: 30px 20px;
+    font-size: 13px;
+  }
+  
+  .qr-code-display canvas {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* Tablet Styles */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .qr-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 </style>

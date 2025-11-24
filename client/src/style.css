@@ -1,5 +1,86 @@
+/* CSS Reset & Base Styles */
+* {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
   padding: 0;
   background-color: #f5f7fa;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Responsive Utilities */
+.mobile-only {
+  display: none;
+}
+
+.desktop-only {
+  display: block;
+}
+
+/* Touch-friendly tap targets */
+button, a, .el-button {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Responsive Tables */
+.el-table {
+  font-size: 14px;
+}
+
+/* Mobile Breakpoint: < 768px */
+@media (max-width: 767px) {
+  .mobile-only {
+    display: block;
+  }
+  
+  .desktop-only {
+    display: none;
+  }
+  
+  /* Reduce padding on mobile */
+  .el-card {
+    margin-bottom: 16px;
+  }
+  
+  .el-card__body {
+    padding: 16px;
+  }
+  
+  .el-form-item__label {
+    font-size: 14px;
+  }
+  
+  /* Responsive tables with horizontal scroll */
+  .el-table {
+    font-size: 12px;
+  }
+  
+  .el-table__body-wrapper {
+    overflow-x: auto;
+  }
+  
+  /* Full width dialogs on mobile */
+  .el-dialog {
+    width: 95% !important;
+    margin: 20px auto !important;
+  }
+  
+  /* Stack buttons vertically on mobile */
+  .el-button + .el-button {
+    margin-left: 0;
+    margin-top: 8px;
+  }
+}
+
+/* Tablet Breakpoint: 768px - 1024px */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .el-card__body {
+    padding: 18px;
+  }
 }

@@ -41,7 +41,7 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import axios from 'axios'
+import api from '../config/api'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { API_URL } from '../config/api'
 
@@ -58,7 +58,7 @@ const form = reactive({
 const fetchCustomers = async () => {
   loading.value = true
   try {
-    const res = await axios.get(`${API_URL}/api/customers`)
+    const res = await api.get('/api/customers')
     customers.value = res.data
   } catch (error) {
     ElMessage.error('Lỗi tải danh sách khách hàng')
@@ -85,10 +85,10 @@ const openDialog = (customer = null) => {
 const saveCustomer = async () => {
   try {
     if (isEdit.value) {
-      await axios.put(`${API_URL}/api/customers/${form.phoneNumber}`, form)
+      await api.put(`/api/customers/${form.phoneNumber}`, form)
       ElMessage.success('Cập nhật thành công')
     } else {
-      await axios.post(`${API_URL}/api/customers`, form)
+      await api.post('/api/customers', form)
       ElMessage.success('Thêm mới thành công')
     }
     dialogVisible.value = false
@@ -105,7 +105,7 @@ const deleteCustomer = (customer) => {
     { confirmButtonText: 'Xoá', cancelButtonText: 'Huỷ', type: 'warning' }
   ).then(async () => {
     try {
-      await axios.delete(`${API_URL}/api/customers/${customer.phoneNumber}`)
+      await api.delete(`/api/customers/${customer.phoneNumber}`)
       ElMessage.success('Đã xoá')
       fetchCustomers()
     } catch (error) {

@@ -24,7 +24,7 @@
 <script setup>
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
+import api from '../config/api'
 import { ElMessage } from 'element-plus'
 import { API_URL } from '../config/api'
 
@@ -42,7 +42,7 @@ const handleLogin = async () => {
   }
   loading.value = true
   try {
-    const res = await axios.post(`${API_URL}/api/login`, form)
+    const res = await api.post('/api/login', form)
     localStorage.setItem('token', res.data.token)
     ElMessage.success('Đăng nhập thành công')
     router.push('/')

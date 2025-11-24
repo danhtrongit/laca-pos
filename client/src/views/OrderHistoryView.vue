@@ -77,7 +77,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import axios from 'axios'
+import api from '../config/api'
 import { ElMessage } from 'element-plus'
 import { API_URL } from '../config/api'
 
@@ -91,14 +91,12 @@ const searchPhone = ref('')
 const fetchOrders = async () => {
   loading.value = true
   try {
-    const token = localStorage.getItem('token')
-    const res = await axios.get(`${API_URL}/api/orders`, {
+    const res = await api.get('/api/orders', {
       params: {
         page: page.value,
         limit: limit.value,
         customerId: searchPhone.value || undefined
-      },
-      headers: { Authorization: `Bearer ${token}` }
+      }
     })
     orders.value = res.data.orders
     total.value = res.data.total
@@ -128,10 +126,54 @@ onMounted(fetchOrders)
 <style scoped>
 .filters {
   margin-bottom: 20px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }
+
 .pagination {
   margin-top: 20px;
   display: flex;
   justify-content: flex-end;
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 767px) {
+  .filters {
+    flex-direction: column;
+  }
+  
+  .filters :deep(.el-input) {
+    width: 100% !important;
+    margin-right: 0 !important;
+  }
+  
+  .filters :deep(.el-button) {
+    width: 100%;
+  }
+  
+  .pagination {
+    justify-content: center;
+  }
+  
+  .pagination :deep(.el-pagination) {
+    overflow-x: auto;
+  }
+  
+  /* Make table scrollable horizontally on mobile */
+  :deep(.el-table) {
+    font-size: 12px;
+  }
+  
+  :deep(.el-table__body-wrapper) {
+    overflow-x: auto;
+  }
+}
+
+/* Tablet Styles */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .filters :deep(.el-input) {
+    width: 250px;
+  }
 }
 </style>

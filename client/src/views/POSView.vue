@@ -2,7 +2,7 @@
   <div class="pos-container">
     <el-row :gutter="20">
       <!-- Left Column: Customer & Bill Input -->
-      <el-col :span="14">
+      <el-col :xs="24" :sm="24" :md="14" :lg="14">
         <el-card class="mb-20">
           <template #header>
             <div class="card-header">
@@ -10,7 +10,7 @@
             </div>
           </template>
           
-          <el-form label-width="150px">
+          <el-form :label-width="labelWidth" label-position="top" class="pos-form">
             <el-form-item label="Khách hàng">
               <el-select
                 v-model="selectedCustomerId"
@@ -55,7 +55,7 @@
 
             <el-form-item label="Dùng điểm" v-if="currentCustomer">
               <el-switch v-model="usePoints" />
-              <div v-if="usePoints" style="margin-top: 10px">
+              <div v-if="usePoints" class="points-section">
                 <el-checkbox v-model="useAllPoints">Dùng tối đa ({{ maxPointsCanUse }})</el-checkbox>
                 <el-input-number 
                   v-if="!useAllPoints" 
@@ -64,7 +64,7 @@
                   :max="maxPointsCanUse" 
                   style="width: 140px; margin-left: 10px"
                 />
-                <div style="font-size: 12px; color: #666; margin-top: 5px">
+                <div class="points-value-info">
                   Giá trị quy đổi: {{ formatCurrency(pointsValue) }}
                 </div>
               </div>
@@ -74,7 +74,7 @@
       </el-col>
 
       <!-- Right Column: Summary -->
-      <el-col :span="10">
+      <el-col :xs="24" :sm="24" :md="10" :lg="10">
         <el-card class="summary-card">
           <template #header>
             <div class="card-header">
@@ -120,7 +120,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import axios from 'axios'
+import api from '../config/api'
 import { ElMessage } from 'element-plus'
 import { API_URL } from '../config/api'
 
@@ -143,6 +143,14 @@ const settings = ref({
 })
 
 const processing = ref(false)
+
+// Responsive label width
+const labelWidth = computed(() => {
+  if (typeof window !== 'undefined' && window.innerWidth < 768) {
+    return 'auto'
+  }
+  return '150px'
+})
 
 // Computed Logic
 const calculatedDiscount = computed(() => {
@@ -188,7 +196,7 @@ const formatCurrency = (value) => {
 
 const fetchSettings = async () => {
   try {
-    const res = await axios.get(`${API_URL}/api/settings`)
+    const res = await api.get('/api/settings')
     if (res.data.moneyToPointRate) settings.value.moneyToPointRate = Number(res.data.moneyToPointRate)
     if (res.data.pointToMoneyRate) settings.value.pointToMoneyRate = Number(res.data.pointToMoneyRate)
   } catch (error) {
@@ -200,7 +208,7 @@ const searchCustomer = async (query) => {
   if (query) {
     loadingSearch.value = true
     try {
-      const res = await axios.get(`${API_URL}/api/customers`)
+      const res = await api.get('/api/customers')
       // Simple client-side filtering for demo (should be server-side for large data)
       customerOptions.value = res.data.filter(c => 
         c.phoneNumber.includes(query) || (c.name && c.name.toLowerCase().includes(query.toLowerCase()))
@@ -215,7 +223,7 @@ const searchCustomer = async (query) => {
 
 const onCustomerSelect = async (val) => {
   try {
-    const res = await axios.get(`${API_URL}/api/customers/${val}`)
+    const res = await api.get(`/api/customers/${val}`)
     currentCustomer.value = res.data
     usePoints.value = false // Reset switch
   } catch (error) {
@@ -239,7 +247,7 @@ const processOrder = async () => {
       finalAmount: finalAmount.value
     }
 
-    await axios.post(`${API_URL}/api/orders`, payload)
+    await api.post('/api/orders', payload)
     
     ElMessage.success(`Thanh toán thành công! Tích được ${pointsEarned.value} điểm.`)
     
@@ -269,42 +277,134 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.mb-20 { margin-bottom: 20px; }
-.ml-10 { margin-left: 10px; }
+.pos-container {
+  width: 100%;
+}
+
+.mb-20 { 
+  margin-bottom: 20px; 
+}
+
+.ml-10 { 
+  margin-left: 10px; 
+}
+
 .customer-info {
   background: #f0f9eb;
   padding: 10px;
   border-radius: 4px;
   margin-bottom: 20px;
 }
-.highlight { color: #014E27; font-size: 1.2em; }
+
+.customer-info p {
+  margin: 8px 0;
+}
+
+.highlight { 
+  color: #014E27; 
+  font-size: 1.2em; 
+}
+
 .summary-card {
   background: #fff;
 }
+
 .summary-row {
   display: flex;
   justify-content: space-between;
   padding: 10px 0;
   font-size: 16px;
 }
-.summary-row.discount { color: #e6a23c; }
-.summary-row.points { color: #409eff; }
+
+.summary-row.discount { 
+  color: #e6a23c; 
+}
+
+.summary-row.points { 
+  color: #409eff; 
+}
+
 .summary-row.total {
   font-size: 20px;
   font-weight: bold;
   color: #f56c6c;
 }
+
 .summary-row.earn {
   color: #67c23a;
   font-weight: bold;
 }
+
 .actions {
   margin-top: 20px;
 }
+
 .pay-btn {
   width: 100%;
   font-weight: bold;
   height: 50px;
   font-size: 18px;
+}
+
+.points-section {
+  margin-top: 10px;
+}
+
+.points-value-info {
+  font-size: 12px;
+  color: #666;
+  margin-top: 5px;
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 767px) {
+  .pos-form :deep(.el-form-item__label) {
+    text-align: left;
+    margin-bottom: 8px;
+  }
+  
+  .summary-row {
+    font-size: 14px;
+    padding: 8px 0;
+  }
+  
+  .summary-row.total {
+    font-size: 18px;
+  }
+  
+  .pay-btn {
+    height: 48px;
+    font-size: 16px;
+  }
+  
+  .customer-info {
+    padding: 12px;
+  }
+  
+  .highlight {
+    font-size: 1.1em;
+  }
+  
+  .points-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .points-section .el-input-number {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+}
+
+/* Tablet Styles */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .summary-row {
+    font-size: 15px;
+  }
+  
+  .summary-row.total {
+    font-size: 19px;
+  }
 }
 </style>
